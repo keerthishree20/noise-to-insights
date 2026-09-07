@@ -22,3 +22,6 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+# pytest
+.pytest_cache/

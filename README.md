@@ -138,15 +138,36 @@ backend/
 Swapping model providers means rewriting `modules/llm.py` and nothing else —
 nothing above that layer knows what produced a theme.
 
+## Tests
+
+```bash
+cd backend
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest
+```
+
+Ten tests, about ten seconds, no API key and no network. Everything except
+`modules/llm.py` runs for real; the three model calls are replaced with
+deterministic stand-ins.
+
+The substantive ones generate a synthetic export in which `Plan` predicts the
+theme and `Region` is assigned at random, then assert that the pipeline finds the
+first and rejects the second — a test that fails if either the clustering or the
+correction stops working. Others cover the under-powered case (a reason, never a
+p-value), the small-survey path that skips clustering, upload rejection,
+persistence, and the 404/400 boundaries.
+
 ## Status
 
-Verified on 2026-09-07 against a 720-response synthetic export with a planted
-segment effect, using stubbed model calls:
+Verified on 2026-09-07:
 
-- Ingest, profiling, clustering, chi-square, FDR, SSE streaming, persistence and
-  delete all work end to end.
-- The planted effect was detected (p = 1.7e-71, Cramér's V = 0.71) and a
-  deliberately random segment was correctly reported as not significant.
+- The test suite above passes: ingest, profiling, clustering, chi-square, FDR,
+  SSE streaming, persistence and delete all work end to end. The planted effect
+  is detected (p = 1.7e-71, Cramér's V = 0.71); the random one is not.
+- The browser path was exercised for real — a headless Chrome `EventSource`
+  driving `streamAnalysis()` received five named `progress` frames and a
+  terminating `error` frame, with CORS headers correct on the streaming
+  response.
 - Frontend builds under strict TypeScript; results render correctly in light and
   dark.
 
@@ -161,8 +182,6 @@ Also outstanding:
   `GOOGLE_CREDENTIALS_PATH` and `REDIRECT_URI`, and `requirements.txt` still
   pulls the `google-auth` stack, for a `modules/sheets.py` that was never
   written. Either build it or drop the dependencies.
-- **No test suite.** The checks above were run from a scratch script, not
-  committed as tests.
 - **Profiling edge case.** A long free-text column with many repeated answers
   (unique ratio below 0.55, more than 30 distinct values) falls through to
   `identifier` and won't be offered for theming. Real open text is near-unique so
