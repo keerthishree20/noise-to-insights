@@ -1,0 +1,24 @@
+# Secrets and credentials
+.env
+.env.local
+credentials.json
+
+# Uploaded files and the DuckDB database. Disposable by design -- deleting
+# backend/data/ resets the app to a clean slate.
+backend/data/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
