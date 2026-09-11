@@ -178,10 +178,13 @@ a key and run once before trusting the theming path.
 
 Also outstanding:
 
-- **Google Sheets ingestion is not implemented.** `config.py` still carries
-  `GOOGLE_CREDENTIALS_PATH` and `REDIRECT_URI`, and `requirements.txt` still
-  pulls the `google-auth` stack, for a `modules/sheets.py` that was never
-  written. Either build it or drop the dependencies.
+- **Google Sheets ingestion was dropped, not built.** The half-reference to it
+  is gone: `GOOGLE_CREDENTIALS_PATH`, `REDIRECT_URI`, `credentials.json.example`
+  and the three `google-auth` packages have been removed, because nothing
+  imported them. Wiring it up needs an OAuth client registered in a Google Cloud
+  project and a browser consent round-trip, neither of which this repo carries.
+  Until someone wants that, export the sheet as CSV or XLSX and upload it — the
+  ingest path already reads both.
 - **Profiling edge case.** A long free-text column with many repeated answers
   (unique ratio below 0.55, more than 30 distinct values) falls through to
   `identifier` and won't be offered for theming. Real open text is near-unique so

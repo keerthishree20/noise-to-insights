@@ -22,12 +22,6 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 MODEL = os.getenv("MODEL", "claude-opus-5")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8000/auth/callback")
-
-# Google Sheets ingestion is not wired up -- see modules/sheets.py.
-GOOGLE_CREDENTIALS_PATH = Path(
-    os.getenv("GOOGLE_CREDENTIALS_PATH", BACKEND_DIR / "credentials.json")
-)
 
 # Below this many open-text responses, clustering is skipped and Claude themes
 # the responses directly. TF-IDF vectors over a few dozen short answers carry
