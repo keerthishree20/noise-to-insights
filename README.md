@@ -64,7 +64,7 @@ Two processes. The backend's CORS policy allows exactly the origin in
 cd backend
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env          # add your ANTHROPIC_API_KEY
+cp .env.example .env          # add ANTHROPIC_API_KEY, or GEMINI_API_KEY for the free option
 .venv/bin/uvicorn main:app --port 8000 --reload
 ```
 
@@ -85,8 +85,11 @@ All of it lives in `backend/.env` (see `.env.example`):
 
 | Variable | Default | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | *(none)* | Required for theming. Without it, upload and profiling still work |
-| `MODEL` | `claude-opus-5` | |
+| `ANTHROPIC_API_KEY` | *(none)* | Claude, paid. Theming needs this or `GEMINI_API_KEY` |
+| `GEMINI_API_KEY` | *(none)* | Google Gemini, free tier. Used when there is no Anthropic key |
+| `LLM_PROVIDER` | automatic | `anthropic` or `gemini`, to force one when both keys are set |
+| `MODEL` | `claude-opus-5` | Claude model |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model |
 | `FRONTEND_URL` | `http://localhost:5173` | The single allowed CORS origin |
 | `DATA_DIR` | `backend/data` | Uploads + DuckDB. Delete it to reset |
 | `MIN_RESPONSES_FOR_CLUSTERING` | `25` | Below this, responses are themed directly |
@@ -146,7 +149,10 @@ cd backend
 .venv/bin/python -m pytest
 ```
 
-Ten tests, about ten seconds, no API key and no network. Everything except
+Eighteen tests, about ten seconds, no API key and no network. Eight of them
+cover the Gemini path with its HTTP calls replaced: structured output, padding,
+retries on overload, a retired model, a blocked prompt, a malformed reply, and
+index clean-up. The other ten are the pipeline tests. Everything except
 `modules/llm.py` runs for real; the three model calls are replaced with
 deterministic stand-ins.
 
@@ -171,10 +177,16 @@ Verified on 2026-09-07:
 - Frontend builds under strict TypeScript; results render correctly in light and
   dark.
 
-**Not verified: the live model calls.** There is no `ANTHROPIC_API_KEY` on this
-machine, so `llm.name_clusters`, `llm.theme_directly` and `llm.narrative_stream`
-have never run against the real API — they were stubbed for the tests above. Set
-a key and run once before trusting the theming path.
+**Live model calls, verified on 2026-09-18 with Gemini.** A free Gemini option
+was added beside Claude, used when `GEMINI_API_KEY` is set and
+`ANTHROPIC_API_KEY` is not. A full analysis of an 80-response synthetic survey
+ran through the real API: six groups named sensibly ("Support reply time",
+"Cost for small team", ...) and a streamed readout. Temporary overload errors
+(429/503) are retried with backoff. **The Claude path is still unverified** —
+no Anthropic key was available.
+
+Writing the Gemini tests also found a bug in small-survey theming: an answer the
+model listed twice inside one theme was counted twice. Fixed.
 
 Also outstanding:
 

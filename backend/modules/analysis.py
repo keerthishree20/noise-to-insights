@@ -82,7 +82,7 @@ def run_analysis(
             groups=len(clusters),
         )
 
-        yield _event("theming", "Asking Claude to name each group")
+        yield _event("theming", "Asking the model to name each group")
         named = llm.name_clusters(clusters, question=text_column)
 
         for cluster, theme in zip(clusters, named):

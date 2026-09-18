@@ -17,9 +17,28 @@ DB_PATH = DATA_DIR / "insights.duckdb"
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
-# Claude is only ever called from modules/llm.py. Swapping providers means
-# rewriting that one file, not hunting calls through the codebase.
+# The model is only ever called from modules/llm.py. Swapping providers means
+# changing that one file, not hunting calls through the codebase.
 MODEL = os.getenv("MODEL", "claude-opus-5")
+
+# Google Gemini, the free alternative. Used when LLM_PROVIDER=gemini, or
+# automatically when there is a Gemini key and no Anthropic key.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+
+def _pick_provider() -> str | None:
+    chosen = os.getenv("LLM_PROVIDER", "").strip().lower()
+    if chosen in ("anthropic", "gemini"):
+        return chosen
+    if ANTHROPIC_API_KEY:
+        return "anthropic"
+    if GEMINI_API_KEY:
+        return "gemini"
+    return None
+
+
+LLM_PROVIDER = _pick_provider()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 

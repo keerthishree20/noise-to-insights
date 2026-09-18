@@ -31,8 +31,9 @@ You upload a CSV or Excel file of survey responses. The app:
 The difference it aims for: "pricing came up a lot" is an observation. "Pricing came up three times
 more often among trial users than paid users, and that gap is unlikely to be noise" is a finding.
 
-The model is Anthropic's Claude, set by `MODEL`, which defaults to `claude-opus-5`. Running it costs
-money.
+Two model providers are supported. Anthropic's Claude, `MODEL`, default `claude-opus-5`, is paid.
+Google Gemini, `GEMINI_MODEL`, default `gemini-2.5-flash`, has a free tier and is used automatically
+when `GEMINI_API_KEY` is set and `ANTHROPIC_API_KEY` is not.
 
 ---
 
@@ -45,7 +46,7 @@ The system `python3` here is 3.6, so use Python 3.12.
 cd backend
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-cp .env.example .env          # add ANTHROPIC_API_KEY
+cp .env.example .env          # add ANTHROPIC_API_KEY, or GEMINI_API_KEY for the free option
 .venv/bin/uvicorn main:app --port 8000 --reload
 ```
 Interactive API docs are at http://localhost:8000/docs.
@@ -158,7 +159,7 @@ Each event becomes one SSE frame of type `progress`, `narrative`, `result` or `e
 | `modules/ingest.py` | `load_table()`, `detect_encoding()`, `_drop_banner_row()` for exports with a title row, `_dedupe()` for repeated headers |
 | `modules/profiling.py` | `profile_frame()` classifies columns and suggests the text column and segments. `extract_responses()` |
 | `modules/clustering.py` | `cluster_responses()` returns `Cluster`s. `_choose_k()` by silhouette |
-| `modules/llm.py` | `name_clusters()`, `theme_directly()`, `narrative_stream()`, and a refusal check |
+| `modules/llm.py` | `name_clusters()`, `theme_directly()`, `narrative_stream()`, each on Claude or Gemini, with refusal checks and Gemini retries |
 | `modules/statistics.py` | `theme_by_segment()`, `_cramers_v()`, `apply_fdr()` |
 | `modules/analysis.py` | `run_analysis()` and segment ranking |
 | `utils/store.py` | `save_dataset()`, `load_frame()`, `get_dataset()`, `list_datasets()`, `save_result()`, `delete_dataset()` |
@@ -208,8 +209,11 @@ default to what profiling suggested.
 
 | variable | default | notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | none | required for theming |
-| `MODEL` | `claude-opus-5` | |
+| `ANTHROPIC_API_KEY` | none | Claude, paid. Theming needs this or `GEMINI_API_KEY` |
+| `GEMINI_API_KEY` | none | Gemini, free tier. Used when there is no Anthropic key |
+| `LLM_PROVIDER` | automatic | `anthropic` or `gemini`, to force one when both keys are set |
+| `MODEL` | `claude-opus-5` | Claude model |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model |
 | `FRONTEND_URL` | `http://localhost:5173` | the single allowed CORS origin |
 | `DATA_DIR` | `backend/data` | uploads and DuckDB. Delete it to reset |
 | `MIN_RESPONSES_FOR_CLUSTERING` | `25` | below this, the model themes directly |
@@ -238,8 +242,9 @@ upload rejection, persistence, and 400 and 404 responses.
 
 - **Verified:** the full pipeline with stubbed model calls, the SSE stream from a real browser with
   correct CORS headers, and the frontend build in light and dark.
-- **Not verified:** the live model calls. No API key was available, so theming and the narrative
-  have never run against the real API. Run once with a key before trusting them.
+- **Verified 2026-09-18 with Gemini:** a full live analysis named every group sensibly and streamed
+  a readout. Temporary overload errors are retried.
+- **Not verified:** the Claude path. No Anthropic key was available.
 - **Dropped:** Google Sheets import. Export the sheet as CSV or XLSX instead.
 - **Not deployed.**
 
@@ -251,8 +256,9 @@ upload rejection, persistence, and 400 and 404 responses.
 You opened `127.0.0.1:5173`. Use `localhost:5173`, or change `FRONTEND_URL` to match.
 
 ### Theming fails but upload works
-`GET /api/health` shows `llm_configured`. If it is false, add `ANTHROPIC_API_KEY` to `backend/.env`
-and restart.
+`GET /api/health` shows `llm_configured` and which `provider` is in use. If it is false, add
+`ANTHROPIC_API_KEY`, or `GEMINI_API_KEY` for the free option, to `backend/.env` and restart. If the
+error says the model is overloaded, wait a minute and run the analysis again.
 
 ### My open-ended question is not offered for theming
 Its answers repeat too often, so profiling classified it as an identifier. The thresholds are in

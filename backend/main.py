@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import analysis, datasets
-from utils.config import ANTHROPIC_API_KEY, FRONTEND_URL, MODEL, ensure_dirs
+from utils.config import FRONTEND_URL, GEMINI_MODEL, LLM_PROVIDER, MODEL, ensure_dirs
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
@@ -17,13 +17,13 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_dirs()
-    if not ANTHROPIC_API_KEY:
+    if LLM_PROVIDER is None:
         # Uploading and profiling work without a key; theming does not. Say so
         # at boot rather than letting the first analysis fail mysteriously.
         log.warning(
-            "No ANTHROPIC_API_KEY set -- uploads and profiling will work, but "
-            "any analysis will stop at the theming step. Copy .env.example to "
-            ".env and add a key."
+            "No ANTHROPIC_API_KEY or GEMINI_API_KEY set -- uploads and profiling "
+            "will work, but any analysis will stop at the theming step. Copy "
+            ".env.example to .env and add a key."
         )
     yield
 
@@ -52,6 +52,7 @@ def health() -> dict[str, object]:
     """Whether the app can actually complete an analysis, not just respond."""
     return {
         "status": "ok",
-        "llm_configured": bool(ANTHROPIC_API_KEY),
-        "model": MODEL,
+        "llm_configured": LLM_PROVIDER is not None,
+        "provider": LLM_PROVIDER,
+        "model": GEMINI_MODEL if LLM_PROVIDER == "gemini" else MODEL,
     }
