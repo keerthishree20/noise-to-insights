@@ -1,5 +1,7 @@
 # Noise to Insights
 
+[![tests](https://github.com/keerthishree20/noise-to-insights/actions/workflows/tests.yml/badge.svg)](https://github.com/keerthishree20/noise-to-insights/actions/workflows/tests.yml)
+
 Turns a survey export into findings you can act on.
 
 "Pricing came up a lot" is an observation. **"Pricing came up three times more
